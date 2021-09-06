@@ -1,0 +1,127 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body>
+    <h1>My AR Experiences</h1>
+    
+    <p>This sample project will connect to the Appearition Platform and download the published AR Experiences. </p>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">AR Experiences</div>
+        <div class="panel-body" id="arExperiences">None Loaded</div>
+        <div class="panel-footer">
+            <button class="btn btn-primary" onclick="javascript: loadArExperiences();">Load AR Experiences</button>
+        </div>
+    </div>
+
+    <br />
+
+    <div class="panel panel-default">
+        <div class="panel-heading">Messages</div>
+        <div class="panel-body" id="messages">Starting</div>
+    </div>
+
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://s3-ap-southeast-2.amazonaws.com/cdn.appearition.com/sdk/js/core/v1.0.0/appearition.min.js"></script>
+<script src="https://s3-ap-southeast-2.amazonaws.com/cdn.appearition.com/sdk/js/modules/authentication/v1.0.0/appearition.authentication.min.js"></script>
+<script src="https://s3-ap-southeast-2.amazonaws.com/cdn.appearition.com/sdk/js/modules/arTargetImageAndMedia/v1.0.0/appearition.arTargetImageAndMedia.min.js"></script>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        Appearition.Init('https://api.appearition.com/arcms01/api/', 'appearition.app', '830755C0-A07A-48E1-AC4A-213FBFEA4726', 0);
+        PrintMessage("Appearition SDK has been initialised");
+    });
+
+    function loadArExperiences() {
+        $('#arExperiences').html('Loading...');
+
+        Appearition.ArTargetImageAndMedia.ListByChannel(
+            {
+                beforeSend: function (request) {
+                    PrintMessage("Calling ListByChannel");
+                },
+                complete: function () {
+                    PrintMessage("Call to ListByChannel completed");
+                },
+                success: function (data) {
+                    console.log(data);
+
+                    var htmlSnip = "<table class='table'><tr><th>Name</th><th>Asset Id</th><th>Media</th></tr>";
+                    for (var i = 0; i < data.assets.length; i++) {
+                        var asset = loadAsset(data.assets[i]);
+                        htmlSnip += showAsset(asset);
+                    }
+                    htmlSnip += "</table>";
+
+                    $('#arExperiences').html(htmlSnip);
+                },
+                fail: function (errorArr, xhr, thrownError) {
+                    handleResponseErrors(errorArr, xhr, thrownError);
+                    $('#arExperiences').innerHTML = 'Loading failed';
+                }
+            });
+    }
+
+    function showAsset(asset) {
+        var html = "<tr>"
+            + "<td>" + asset.name + "</td>"
+            + "<td>" + asset.assetId + "</td>"
+            + "<td>";
+
+        for (var i = 0; i < asset.mediaFiles.length; i++) {
+            var media = asset.mediaFiles[i];
+            html += "Media Type: " + media.mediaType + "<br/>" + "<a target='blank' href='" + media.url + "'>View</a>";
+        }
+
+        if (asset.mediaFiles.length == 0) {
+            html += "No Media Available";
+        }
+
+        html += "</td></tr>";
+
+        return html;
+    }
+
+    function loadAsset(jsData) {
+
+        var asset = {
+            assetId: jsData.assetId,
+            name: jsData.name,
+            mediaFiles: jsData.mediaFiles
+        };
+
+        return asset;
+    }
+
+    function handleResponseErrors(errorArr, xhr, thrownError) {
+        var msg = "";
+
+        if (errorArr != null) {
+            errorArr.foreach(function (e) {
+                msg = msg + e + "; ";
+            });
+        }
+
+        if (xhr != null) {
+            msg = msg + "Status Code: " + xhr.status + ", ResponseText: " + xhr.responseText + "; ";
+        }
+
+        if (thrownError != null) {
+            msg = msg + "ThrownError: " + thrownError + ";";
+        }
+
+        PrintMessage(msg);
+    }
+
+    function PrintMessage(msg) {
+        $('#messages').append("<br/>");
+        $('#messages').append(msg);
+    }
+
+</script>
+
+</html>
